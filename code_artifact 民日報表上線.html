@@ -1,0 +1,2156 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咖啡習慣 KAFFA SIGUAN 日報表平台</title>
+    <!-- Tailwind CSS 適用於快速排版與響應式設計 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 圖標庫 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts - Inter ＆ 適合亞洲字體的 Google Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        irongray: {
+                            50: '#F5F6F7',
+                            100: '#EAECEE',
+                            200: '#D5D8DC',
+                            700: '#4A4D50',
+                            800: '#3A3D40', // 主色系：鐵灰
+                            900: '#2C2E30',
+                        },
+                        gold: {
+                            400: '#E5C158',
+                            500: '#D4AF37', // 輔助色系：質感金
+                            600: '#B89328',
+                        },
+                        mint: {
+                            400: '#62D9C5',
+                            500: '#48C9B0', // 按鈕主色：薄荷綠
+                            600: '#3AB29B',
+                            700: '#2E9380',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 自訂滚动條樣式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F5F6F8;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D5D8DC;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4A4D50;
+        }
+        /* 隱藏預設 Datepicker 下拉圖示 */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0;
+            color: transparent;
+            cursor: pointer;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- React 渲染容器 -->
+    <div id="root" class="flex-1 flex flex-col"></div>
+
+    <!-- React & Babel CDN 載入 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.5/babel.min.js"></script>
+
+    <!-- React 主要邏輯與 UI 元件 -->
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // 翻譯語系字典
+        const translations = {
+            'zh-TW': {
+                title: '咖啡習慣 KAFFA SIGUAN 日報表',
+                menu_register: '登錄消費',
+                menu_query: '消費查詢',
+                menu_items: '銷售品項',
+                menu_admin: '管理後台',
+                core_cust: '版型一：核心客群',
+                gen_cust: '版型二：一般客群',
+                time: '來店時間',
+                name: '姓名',
+                code: '代號',
+                payment: '付款方式',
+                cash: '現金',
+                linepay: 'Line Pay',
+                prepaid: '儲值扣款',
+                cup_prepaid: '寄杯',
+                item: '品項',
+                temp: '溫度',
+                ice: '冰',
+                hot: '熱',
+                warm: '溫',
+                submit: '確認登錄',
+                add_new: '新增',
+                balance: '餘額',
+                cups_left: '杯數',
+                order_sort: '調整順序',
+                save_order: '完成排序',
+                placeholder_name: '請輸入姓名/代號',
+                placeholder_balance: '起初儲值/寄杯額度',
+                add_success: '新增成功！',
+                register_success: '登錄成功！',
+                cancel: '取消',
+                confirm_add: '確認新增',
+                
+                // 後台相關
+                admin_finance: '財報分析',
+                admin_analysis: '客群分析',
+                admin_billing: 'Line Pay 請款',
+                admin_accounting: '日常記帳',
+                
+                today: '今日',
+                week: '本週',
+                month: '本月',
+                custom_range: '自訂期間',
+                total_rev: '總營業額',
+                total_exp: '總支出',
+                net_profit: '淨利潤',
+                revenue_by_pay: '各付款管道分析',
+                purchase: '採購登錄',
+                utilities: '水電費',
+                rent: '租金',
+                others: '其他費用',
+                exp_category: '費用類別',
+                exp_amount: '費用金額',
+                exp_memo: '備註說明',
+                payout_date: '撥款日期',
+                payout_status: '撥款狀態',
+                payout_mark: '點擊輸入日期',
+                no_record: '尚無紀錄',
+                search: '查詢',
+                start_date: '開始日期',
+                end_date: '結束日期'
+            },
+            'en': {
+                title: 'KAFFA SIGUAN Daily Report',
+                menu_register: 'Register Consumption',
+                menu_query: 'Sales Query',
+                menu_items: 'Sales Items',
+                menu_admin: 'Admin Console',
+                core_cust: 'Type I: Core Customers',
+                gen_cust: 'Type II: General Customers',
+                time: 'Visit Time',
+                name: 'Name',
+                code: 'Code',
+                payment: 'Payment',
+                cash: 'Cash',
+                linepay: 'Line Pay',
+                prepaid: 'Prepaid',
+                cup_prepaid: 'Prepaid Cup',
+                item: 'Item',
+                temp: 'Temp',
+                ice: 'Ice',
+                hot: 'Hot',
+                warm: 'Warm',
+                submit: 'Confirm Record',
+                add_new: 'Add',
+                balance: 'Balance',
+                cups_left: 'Cups',
+                order_sort: 'Sort Order',
+                save_order: 'Done Sorting',
+                placeholder_name: 'Enter name/code',
+                placeholder_balance: 'Initial prepaid/cups',
+                add_success: 'Added successfully!',
+                register_success: 'Recorded successfully!',
+                cancel: 'Cancel',
+                confirm_add: 'Add New',
+
+                admin_finance: 'Financials',
+                admin_analysis: 'Customer Analytics',
+                admin_billing: 'Line Pay Payouts',
+                admin_accounting: 'Accounting',
+
+                today: 'Today',
+                week: 'Weekly',
+                month: 'Monthly',
+                custom_range: 'Custom Range',
+                total_rev: 'Total Revenue',
+                total_exp: 'Total Expenses',
+                net_profit: 'Net Profit',
+                revenue_by_pay: 'Revenue by Payment',
+                purchase: 'Purchase Ledger',
+                utilities: 'Utilities',
+                rent: 'Rent',
+                others: 'Others',
+                exp_category: 'Expense Category',
+                exp_amount: 'Amount',
+                exp_memo: 'Memo',
+                payout_date: 'Payout Date',
+                payout_status: 'Status',
+                payout_mark: 'Enter date',
+                no_record: 'No records found',
+                search: 'Search',
+                start_date: 'Start Date',
+                end_date: 'End Date'
+            },
+            'ja': {
+                title: '珈琲習慣 KAFFA SIGUAN 日報',
+                menu_register: '売上記録',
+                menu_query: '売上照会',
+                menu_items: 'メニュー設定',
+                menu_admin: '管理コンソール',
+                core_cust: 'タイプI：コア顧客',
+                gen_cust: 'タイプII：一般顧客',
+                time: '来店時間',
+                name: 'お名前',
+                code: 'コード名',
+                payment: '決済方法',
+                cash: '現金',
+                linepay: 'Line Pay',
+                prepaid: 'チャージ決済',
+                cup_prepaid: 'コーヒーキープ',
+                item: '商品名',
+                temp: '温度',
+                ice: 'アイス',
+                hot: 'ホット',
+                warm: 'マイルド',
+                submit: '登録確認',
+                add_new: '新規追加',
+                balance: '残高',
+                cups_left: '残り杯数',
+                order_sort: '並び替え',
+                save_order: '並び替え完了',
+                placeholder_name: '名前/コードを入力',
+                placeholder_balance: '初期チャージ額/キープ数',
+                add_success: '追加しました！',
+                register_success: '登録しました！',
+                cancel: 'キャンセル',
+                confirm_add: '追加',
+
+                admin_finance: '財務分析',
+                admin_analysis: '顧客分析',
+                admin_billing: 'Line Pay 清算',
+                admin_accounting: '経費帳簿',
+
+                today: '今日',
+                week: '今週',
+                month: '今月',
+                custom_range: '期間指定',
+                total_rev: '総売上額',
+                total_exp: '総支出',
+                net_profit: '純利益',
+                revenue_by_pay: '決済別売上構成',
+                purchase: '仕入れ登録',
+                utilities: '光熱水道費',
+                rent: '家賃',
+                others: 'その他経費',
+                exp_category: '経費項目',
+                exp_amount: '金額',
+                exp_memo: 'メモ',
+                payout_date: '入金日',
+                payout_status: '入金状態',
+                payout_mark: '日付入力',
+                no_record: '記録がありません',
+                search: '検索',
+                start_date: '開始日',
+                end_date: '終了日'
+            },
+            'ko': {
+                title: '커피습관 KAFFA SIGUAN 일일보고',
+                menu_register: '매출 등록',
+                menu_query: '매출 조회',
+                menu_items: '판매 품목',
+                menu_admin: '관리자 백엔드',
+                core_cust: '유형 I: 핵심 고객',
+                gen_cust: '유형 II: 일반 고객',
+                time: '방문 시간',
+                name: '이름',
+                code: '코드명',
+                payment: '결제 수단',
+                cash: '현금',
+                linepay: 'Line Pay',
+                prepaid: '선불 충전',
+                cup_prepaid: '컵 키핑',
+                item: '품목',
+                temp: '온도',
+                ice: '아이스',
+                hot: '핫',
+                warm: '미온',
+                submit: '등록 확인',
+                add_new: '추가',
+                balance: '잔액',
+                cups_left: '잔여 컵',
+                order_sort: '순서 조정',
+                save_order: '정렬 완료',
+                placeholder_name: '이름/코드 입력',
+                placeholder_balance: '초기 충전금액/컵 개수',
+                add_success: '추가 완료!',
+                register_success: '등록 완료!',
+                cancel: '취소',
+                confirm_add: '확인 추가',
+
+                admin_finance: '재무 분석',
+                admin_analysis: '고객 분석',
+                admin_billing: 'Line Pay 정산',
+                admin_accounting: '경비 기장',
+
+                today: '오늘',
+                week: '이번 주',
+                month: '이번 달',
+                custom_range: '기간 설정',
+                total_rev: '총 매출',
+                total_exp: '총 지출',
+                net_profit: '순이익',
+                revenue_by_pay: '결제 방식별 분석',
+                purchase: '구매/사입 등록',
+                utilities: '수도광열비',
+                rent: '임차료',
+                others: '기타 비용',
+                exp_category: '비용 분류',
+                exp_amount: '지출 금액',
+                exp_memo: '적요',
+                payout_date: '입금 일자',
+                payout_status: '입금 상태',
+                payout_mark: '날짜 입력',
+                no_record: '기록 없음',
+                search: '조회',
+                start_date: '시작일',
+                end_date: '종료일'
+            }
+        };
+
+        // 格式化當前時間
+        function formatDateTime(date) {
+            const daysOfWeek = {
+                'zh-TW': ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
+                'en': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                'ja': ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'],
+                'ko': ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+            };
+            
+            const currentLang = localStorage.getItem('kaffa_lang') || 'zh-TW';
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const dayOfWeek = daysOfWeek[currentLang][date.getDay()];
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            if (currentLang === 'zh-TW') {
+                return `${year}/${month}/${day}（${dayOfWeek}）${hours}:${minutes}`;
+            } else if (currentLang === 'ja') {
+                return `${year}年${month}月${day}日（${dayOfWeek}）${hours}:${minutes}`;
+            } else if (currentLang === 'ko') {
+                return `${year}년 ${month}월 ${day}일 (${dayOfWeek}) ${hours}:${minutes}`;
+            } else {
+                return `${year}/${month}/${day} (${dayOfWeek}) ${hours}:${minutes}`;
+            }
+        }
+
+        // 初始模擬數據
+        const initialCoreCustomers = [
+            { id: 'core_1', name: '李', prepaidBalance: 1250 },
+            { id: 'core_2', name: '婆', prepaidBalance: 480 },
+            { id: 'core_3', name: '白', prepaidBalance: 0 }
+        ];
+
+        const initialGenCustomers = [
+            { id: 'gen_1', name: '梁襄理', cupsLeft: 5 },
+            { id: 'gen_2', name: '豆子弟弟', cupsLeft: 0 },
+            { id: 'gen_3', name: '咖啡夢小哥', cupsLeft: 12 },
+            { id: 'gen_4', name: '新外國小哥', cupsLeft: 1 },
+            { id: 'gen_5', name: '勁戰小姐', cupsLeft: 3 },
+            { id: 'gen_6', name: '小鬍子', cupsLeft: 0 },
+            { id: 'gen_7', name: 'TIFFINY', cupsLeft: 8 },
+            { id: 'gen_8', name: 'FOLOLLI', cupsLeft: 0 },
+            { id: 'gen_9', name: '華僑先生', cupsLeft: 2 },
+            { id: 'gen_10', name: '酷濃縮先生', cupsLeft: 0 },
+            { id: 'gen_11', name: '152', cupsLeft: 4 },
+            { id: 'gen_12', name: '156', cupsLeft: 0 },
+            { id: 'gen_13', name: '聯上夫妻', cupsLeft: 10 },
+            { id: 'gen_14', name: '過萃先生', cupsLeft: 0 }
+        ];
+
+        const initialItems = [
+            { id: 'item_1', name: '美式', price: 80 },
+            { id: 'item_2', name: '拿鐵', price: 100 },
+            { id: 'item_3', name: '手沖單品', price: 150 },
+            { id: 'item_4', name: '卡布奇諾', price: 110 }
+        ];
+
+        // 過去十天的一些模擬消費與記帳數據以作視覺分析展現
+        const initialRecords = [
+            { id: 'rec_1', time: '2026/06/05（星期五）10:30', timestamp: new Date('2026-06-05T10:30:00'), customerName: '梁襄理', isCore: false, item: '拿鐵', temp: '冰', payment: 'Line Pay', amount: 100, payoutDate: '2026-06-06' },
+            { id: 'rec_2', time: '2026/06/05（星期五）14:15', timestamp: new Date('2026-06-05T14:15:00'), customerName: '李', isCore: true, item: '美式', temp: '熱', payment: '儲值扣款', amount: 80, payoutDate: '' },
+            { id: 'rec_3', time: '2026/06/04（星期四）09:05', timestamp: new Date('2026-06-04T09:05:00'), customerName: '勁戰小姐', isCore: false, item: '拿鐵', temp: '溫', payment: '現金', amount: 100, payoutDate: '' },
+            { id: 'rec_4', time: '2026/06/04（星期四）15:40', timestamp: new Date('2026-06-04T15:40:00'), customerName: '婆', isCore: true, item: '手沖單品', temp: '冰', payment: '現金', amount: 150, payoutDate: '' },
+            { id: 'rec_5', time: '2026/06/03（星期三）11:20', timestamp: new Date('2026-06-03T11:20:00'), customerName: '咖啡夢小哥', isCore: false, item: '美式', temp: '冰', payment: '寄杯', amount: 0, payoutDate: '' },
+            { id: 'rec_6', time: '2026/06/03（星期三）16:10', timestamp: new Date('2026-06-03T16:10:00'), customerName: '白', isCore: true, item: '拿鐵', temp: '熱', payment: 'Line Pay', amount: 100, payoutDate: '' },
+            { id: 'rec_7', time: '2026/06/01（星期一）08:45', timestamp: new Date('2026-06-01T08:45:00'), customerName: '聯上夫妻', isCore: false, item: '手沖單品', temp: '溫', payment: '寄杯', amount: 0, payoutDate: '' },
+            { id: 'rec_8', time: '2026/05/30（星期六）15:00', timestamp: new Date('2026-05-30T15:00:00'), customerName: '梁襄理', isCore: false, item: '美式', temp: '冰', payment: 'Line Pay', amount: 80, payoutDate: '2026-06-02' }
+        ];
+
+        const initialExpenses = [
+            { id: 'exp_1', date: '2026-06-01', category: '租金', amount: 25000, memo: '六月份店鋪租金' },
+            { id: 'exp_2', date: '2026-06-02', category: '採購登錄', amount: 4800, memo: '哥倫比亞與衣索比亞生豆採購' },
+            { id: 'exp_3', date: '2026-06-04', category: '水電費', amount: 3200, memo: '五月份電費與水費結算' }
+        ];
+
+        function App() {
+            const [lang, setLang] = useState(() => localStorage.getItem('kaffa_lang') || 'zh-TW');
+            const [activeMenu, setActiveMenu] = useState('register'); // register, query, items, admin
+            const [currentTime, setCurrentTime] = useState(new Date());
+
+            // 數據庫狀態
+            const [coreCustomers, setCoreCustomers] = useState(() => {
+                const stored = localStorage.getItem('kaffa_core_cust');
+                return stored ? JSON.parse(stored) : initialCoreCustomers;
+            });
+            const [genCustomers, setGenCustomers] = useState(() => {
+                const stored = localStorage.getItem('kaffa_gen_cust');
+                return stored ? JSON.parse(stored) : initialGenCustomers;
+            });
+            const [items, setItems] = useState(() => {
+                const stored = localStorage.getItem('kaffa_items');
+                return stored ? JSON.parse(stored) : initialItems;
+            });
+            const [records, setRecords] = useState(() => {
+                const stored = localStorage.getItem('kaffa_records');
+                return stored ? JSON.parse(stored) : initialRecords;
+            });
+            const [expenses, setExpenses] = useState(() => {
+                const stored = localStorage.getItem('kaffa_expenses');
+                return stored ? JSON.parse(stored) : initialExpenses;
+            });
+
+            // 提醒彈窗狀態
+            const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+            // 語系切換
+            const changeLanguage = (newLang) => {
+                setLang(newLang);
+                localStorage.setItem('kaffa_lang', newLang);
+            };
+
+            // 輔助翻譯函數
+            const t = (key) => translations[lang][key] || translations['zh-TW'][key] || key;
+
+            // 定時更新時間
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            // 資料存檔
+            useEffect(() => {
+                localStorage.setItem('kaffa_core_cust', JSON.stringify(coreCustomers));
+            }, [coreCustomers]);
+
+            useEffect(() => {
+                localStorage.setItem('kaffa_gen_cust', JSON.stringify(genCustomers));
+            }, [genCustomers]);
+
+            useEffect(() => {
+                localStorage.setItem('kaffa_items', JSON.stringify(items));
+            }, [items]);
+
+            useEffect(() => {
+                localStorage.setItem('kaffa_records', JSON.stringify(records));
+            }, [records]);
+
+            useEffect(() => {
+                localStorage.setItem('kaffa_expenses', JSON.stringify(expenses));
+            }, [expenses]);
+
+            // Toast 輔助
+            const showToast = (message, type = 'success') => {
+                setToast({ show: true, message, type });
+                setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+            };
+
+            return (
+                <div class="flex-1 flex flex-col md:flex-row min-h-screen">
+                    
+                    {/* 左半邊功能表 - 寬度 1/6 (md:w-64) */}
+                    <aside class="w-full md:w-64 bg-irongray-800 text-white flex flex-col justify-between p-6 border-r border-irongray-900 z-10">
+                        <div>
+                            {/* LOGO與手機版輔助標題 */}
+                            <div class="flex items-center gap-3 mb-8 pb-6 border-b border-irongray-700">
+                                <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center p-1 shadow-lg shadow-gold-500/10 overflow-hidden">
+                                    <img 
+                                        src="金色logo.png" 
+                                        alt="KAFFA SIGUAN Logo" 
+                                        class="object-contain w-full h-full"
+                                        onError={(e) => { e.target.src = "https://placehold.co/48x48/D4AF37/FFFFFF?text=KAFFA" }}
+                                    />
+                                </div>
+                                <div>
+                                    <h1 class="font-bold text-lg tracking-wider text-gold-500">KAFFA SIGUAN</h1>
+                                    <p class="text-xs text-irongray-200">COFFEE HABIT</p>
+                                </div>
+                            </div>
+
+                            {/* 左側菜單 - 功能表 (白字薄荷綠) */}
+                            <nav class="space-y-4">
+                                <button 
+                                    onClick={() => setActiveMenu('register')}
+                                    class={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-medium ${
+                                        activeMenu === 'register' 
+                                        ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20 translate-x-1' 
+                                        : 'text-irongray-100 hover:bg-irongray-700'
+                                    }`}
+                                >
+                                    <i class="fa-solid fa-pen-to-square text-lg"></i>
+                                    <span>{t('menu_register')}</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setActiveMenu('query')}
+                                    class={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-medium ${
+                                        activeMenu === 'query' 
+                                        ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20 translate-x-1' 
+                                        : 'text-irongray-100 hover:bg-irongray-700'
+                                    }`}
+                                >
+                                    <i class="fa-solid fa-receipt text-lg"></i>
+                                    <span>{t('menu_query')}</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setActiveMenu('items')}
+                                    class={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-medium ${
+                                        activeMenu === 'items' 
+                                        ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20 translate-x-1' 
+                                        : 'text-irongray-100 hover:bg-irongray-700'
+                                    }`}
+                                >
+                                    <i class="fa-solid fa-cubes text-lg"></i>
+                                    <span>{t('menu_items')}</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setActiveMenu('admin')}
+                                    class={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-medium ${
+                                        activeMenu === 'admin' 
+                                        ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20 translate-x-1' 
+                                        : 'text-irongray-100 hover:bg-irongray-700'
+                                    }`}
+                                >
+                                    <i class="fa-solid fa-chart-line text-lg"></i>
+                                    <span>{t('menu_admin')}</span>
+                                </button>
+                            </nav>
+                        </div>
+
+                        {/* 底部語系切換與版權 */}
+                        <div class="mt-8 pt-6 border-t border-irongray-700 space-y-4">
+                            <p class="text-xs text-irongray-200 uppercase tracking-widest font-semibold mb-2">Language</p>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <button 
+                                    onClick={() => changeLanguage('zh-TW')}
+                                    class={`py-1.5 px-2 rounded-lg border transition-all ${lang === 'zh-TW' ? 'bg-gold-500 text-irongray-900 border-gold-500 font-bold' : 'border-irongray-700 text-irongray-200 hover:bg-irongray-700'}`}
+                                >
+                                    繁中
+                                </button>
+                                <button 
+                                    onClick={() => changeLanguage('en')}
+                                    class={`py-1.5 px-2 rounded-lg border transition-all ${lang === 'en' ? 'bg-gold-500 text-irongray-900 border-gold-500 font-bold' : 'border-irongray-700 text-irongray-200 hover:bg-irongray-700'}`}
+                                >
+                                    English
+                                </button>
+                                <button 
+                                    onClick={() => changeLanguage('ja')}
+                                    class={`py-1.5 px-2 rounded-lg border transition-all ${lang === 'ja' ? 'bg-gold-500 text-irongray-900 border-gold-500 font-bold' : 'border-irongray-700 text-irongray-200 hover:bg-irongray-700'}`}
+                                >
+                                    日本語
+                                </button>
+                                <button 
+                                    onClick={() => changeLanguage('ko')}
+                                    class={`py-1.5 px-2 rounded-lg border transition-all ${lang === 'ko' ? 'bg-gold-500 text-irongray-900 border-gold-500 font-bold' : 'border-irongray-700 text-irongray-200 hover:bg-irongray-700'}`}
+                                >
+                                    韓語
+                                </button>
+                            </div>
+                            <div class="text-[10px] text-irongray-200 text-center pt-2">
+                                © 2026 KAFFA SIGUAN
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* 右半邊工作區 */}
+                    <main class="flex-1 flex flex-col min-h-screen bg-slate-50">
+                        
+                        {/* 右上區塊：1/5 高度 (Logo + 咖啡習慣日報表) */}
+                        <header class="bg-irongray-900 text-white px-6 py-6 md:py-8 flex flex-col sm:flex-row justify-between items-center border-b border-gold-500/20 shadow-md">
+                            <div class="flex items-center gap-4 mb-4 sm:mb-0">
+                                <div class="p-1.5 bg-white rounded-2xl w-16 h-16 flex items-center justify-center shadow-md overflow-hidden">
+                                    <img 
+                                        src="金色logo.png" 
+                                        alt="KAFFA SIGUAN Logo" 
+                                        class="object-contain w-full h-full"
+                                        onError={(e) => { e.target.src = "https://placehold.co/64x64/D4AF37/FFFFFF?text=KAFFA" }}
+                                    />
+                                </div>
+                                <div>
+                                    <h2 class="text-xl md:text-2xl font-bold tracking-wider text-gold-500">{t('title')}</h2>
+                                    <p class="text-xs text-slate-300 tracking-wider">KAFFA SIGUAN JOURNAL REPORT • 2026 SYSTEM</p>
+                                </div>
+                            </div>
+                            
+                            {/* 即時日期時間顯示 */}
+                            <div class="bg-irongray-800 border border-slate-700/50 px-4 py-2 rounded-xl text-center shadow-inner">
+                                <span class="text-xs text-slate-300 block uppercase tracking-widest">{t('time')} (24H)</span>
+                                <span class="font-mono text-sm md:text-base font-semibold text-gold-400">
+                                    {formatDateTime(currentTime)}
+                                </span>
+                            </div>
+                        </header>
+
+                        {/* 右下區塊：4/5 高度 - 內容呈現頁面 */}
+                        <div class="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+                            {activeMenu === 'register' && (
+                                <RegisterPanel 
+                                    t={t} 
+                                    lang={lang}
+                                    coreCustomers={coreCustomers}
+                                    setCoreCustomers={setCoreCustomers}
+                                    genCustomers={genCustomers}
+                                    setGenCustomers={setGenCustomers}
+                                    items={items}
+                                    records={records}
+                                    setRecords={setRecords}
+                                    showToast={showToast}
+                                    currentTime={currentTime}
+                                />
+                            )}
+                            {activeMenu === 'query' && (
+                                <QueryPanel 
+                                    t={t} 
+                                    records={records} 
+                                    setRecords={setRecords}
+                                    showToast={showToast}
+                                />
+                            )}
+                            {activeMenu === 'items' && (
+                                <ItemsPanel 
+                                    t={t} 
+                                    items={items} 
+                                    setItems={setItems} 
+                                    coreCustomers={coreCustomers}
+                                    setCoreCustomers={setCoreCustomers}
+                                    genCustomers={genCustomers}
+                                    setGenCustomers={setGenCustomers}
+                                    showToast={showToast}
+                                />
+                            )}
+                            {activeMenu === 'admin' && (
+                                <AdminPanel 
+                                    t={t} 
+                                    lang={lang}
+                                    records={records} 
+                                    setRecords={setRecords}
+                                    expenses={expenses}
+                                    setExpenses={setExpenses}
+                                    coreCustomers={coreCustomers}
+                                    genCustomers={genCustomers}
+                                    showToast={showToast}
+                                />
+                            )}
+                        </div>
+                    </main>
+
+                    {/* 自訂吐司警示視窗 (Toast) */}
+                    {toast.show && (
+                        <div class="fixed bottom-6 right-6 flex items-center gap-3 bg-irongray-900 text-white px-5 py-4 rounded-xl shadow-2xl border-l-4 border-mint-500 z-50 animate-bounce">
+                            <i class="fa-solid fa-circle-check text-mint-500 text-xl"></i>
+                            <span class="font-medium">{toast.message}</span>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 1. 登錄消費版面 (RegisterPanel)
+        // ==========================================
+        function RegisterPanel({ t, lang, coreCustomers, setCoreCustomers, genCustomers, setGenCustomers, items, records, setRecords, showToast, currentTime }) {
+            const [tab, setTab] = useState('core'); // core, general
+            
+            // 版型一：核心客群狀態
+            const [coreSelectedCust, setCoreSelectedCust] = useState(null);
+            const [coreSelectedPayment, setCoreSelectedPayment] = useState('現金');
+            const [coreAmount, setCoreAmount] = useState(100); // 核心客群預設點數/金額
+            const [coreItem, setCoreItem] = useState(items[0]?.name || '美式');
+
+            // 版型二：一般客群狀態
+            const [genSelectedCust, setGenSelectedCust] = useState(null);
+            const [genSelectedPayment, setGenSelectedPayment] = useState('現金');
+            const [genSelectedItem, setGenSelectedItem] = useState(items[0]?.name || '美式');
+            const [genSelectedTemp, setGenSelectedTemp] = useState('冰');
+
+            // 調整一般客群排序狀態
+            const [isSortingMode, setIsSortingMode] = useState(false);
+
+            // 彈窗新增客戶狀態
+            const [showAddModal, setShowAddModal] = useState(false);
+            const [addModalType, setAddModalType] = useState('core'); // core or general
+            const [newCustName, setNewCustName] = useState('');
+            const [newCustBalance, setNewCustBalance] = useState('');
+
+            // 計算目前選中核心客戶餘額
+            const currentCoreBalance = useMemo(() => {
+                if (!coreSelectedCust) return 0;
+                const cust = coreCustomers.find(c => c.id === coreSelectedCust);
+                return cust ? cust.prepaidBalance : 0;
+            }, [coreSelectedCust, coreCustomers]);
+
+            // 計算目前選中一般客戶寄杯杯數
+            const currentGenCups = useMemo(() => {
+                if (!genSelectedCust) return 0;
+                const cust = genCustomers.find(c => c.id === genSelectedCust);
+                return cust ? cust.cupsLeft : 0;
+            }, [genSelectedCust, genCustomers]);
+
+            // 自動根據選中品項，決定一般客群金額
+            const currentGenPrice = useMemo(() => {
+                const found = items.find(i => i.name === genSelectedItem);
+                return found ? found.price : 0;
+            }, [genSelectedItem, items]);
+
+            // 確認登錄消費 核心客群
+            const handleCoreSubmit = () => {
+                if (!coreSelectedCust) {
+                    showToast('請先選擇核心客群姓名！', 'error');
+                    return;
+                }
+                const cust = coreCustomers.find(c => c.id === coreSelectedCust);
+                
+                // 如果是儲值扣款，檢查餘額
+                if (coreSelectedPayment === '儲值扣款' && cust.prepaidBalance < coreAmount) {
+                    showToast('儲值餘額不足！請先為顧客加值或選擇其他付款方式。', 'error');
+                    return;
+                }
+
+                // 扣款邏輯
+                if (coreSelectedPayment === '儲值扣款') {
+                    setCoreCustomers(prev => prev.map(c => 
+                        c.id === coreSelectedCust 
+                        ? { ...c, prepaidBalance: c.prepaidBalance - coreAmount } 
+                        : c
+                    ));
+                }
+
+                const newRecord = {
+                    id: 'rec_' + Date.now(),
+                    time: formatDateTime(currentTime),
+                    timestamp: new Date(),
+                    customerName: cust.name,
+                    isCore: true,
+                    item: coreItem,
+                    temp: '溫',
+                    payment: coreSelectedPayment,
+                    amount: coreSelectedPayment === '儲值扣款' ? 0 : coreAmount, // 儲值扣款在財報中不重複計入現金流
+                    payoutDate: ''
+                };
+
+                setRecords([newRecord, ...records]);
+                showToast(t('register_success'));
+                
+                // 重設狀態
+                setCoreSelectedCust(null);
+            };
+
+            // 確認登錄消費 一般客群
+            const handleGenSubmit = () => {
+                if (!genSelectedCust) {
+                    showToast('請選擇一般客群代號！', 'error');
+                    return;
+                }
+                const cust = genCustomers.find(c => c.id === genSelectedCust);
+
+                // 寄杯付款：扣減一杯
+                if (genSelectedPayment === '寄杯' && cust.cupsLeft < 1) {
+                    showToast('寄杯杯數不足！請選擇其他付款方式。', 'error');
+                    return;
+                }
+
+                if (genSelectedPayment === '寄杯') {
+                    setGenCustomers(prev => prev.map(c => 
+                        c.id === genSelectedCust 
+                        ? { ...c, cupsLeft: c.cupsLeft - 1 } 
+                        : c
+                    ));
+                }
+
+                const newRecord = {
+                    id: 'rec_' + Date.now(),
+                    time: formatDateTime(currentTime),
+                    timestamp: new Date(),
+                    customerName: cust.name,
+                    isCore: false,
+                    item: genSelectedItem,
+                    temp: genSelectedTemp,
+                    payment: genSelectedPayment,
+                    amount: genSelectedPayment === '寄杯' ? 0 : currentGenPrice, // 寄杯兌換不計當日現流
+                    payoutDate: ''
+                };
+
+                setRecords([newRecord, ...records]);
+                showToast(t('register_success'));
+
+                // 重設狀態
+                setGenSelectedCust(null);
+            };
+
+            // 新增自訂客群
+            const handleAddCustSubmit = (e) => {
+                e.preventDefault();
+                if (!newCustName.trim()) return;
+
+                const numericVal = parseInt(newCustBalance) || 0;
+
+                if (addModalType === 'core') {
+                    const newCust = {
+                        id: 'core_' + Date.now(),
+                        name: newCustName.trim(),
+                        prepaidBalance: numericVal
+                    };
+                    setCoreCustomers([...coreCustomers, newCust]);
+                } else {
+                    const newCust = {
+                        id: 'gen_' + Date.now(),
+                        name: newCustName.trim(),
+                        cupsLeft: numericVal
+                    };
+                    setGenCustomers([...genCustomers, newCust]);
+                }
+
+                showToast(t('add_success'));
+                setNewCustName('');
+                setNewCustBalance('');
+                setShowAddModal(false);
+            };
+
+            // 手動調整代號排列順序 (Move up/down)
+            const moveCust = (index, direction) => {
+                const updated = [...genCustomers];
+                const targetIndex = index + direction;
+                if (targetIndex < 0 || targetIndex >= updated.length) return;
+                
+                // Swap
+                const tempVal = updated[index];
+                updated[index] = updated[targetIndex];
+                updated[targetIndex] = tempVal;
+                
+                setGenCustomers(updated);
+            };
+
+            return (
+                <div class="space-y-6">
+                    {/* 兩大版型平行切換頁籤 (全部是按鈕) */}
+                    <div class="flex gap-4 p-1.5 bg-irongray-100 rounded-2xl w-full max-w-md mx-auto shadow-inner">
+                        <button 
+                            onClick={() => setTab('core')}
+                            class={`flex-1 py-3 text-center rounded-xl font-semibold transition-all ${
+                                tab === 'core' 
+                                ? 'bg-white text-irongray-800 shadow-sm border-t border-slate-100' 
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                        >
+                            <i class="fa-solid fa-crown mr-2 text-gold-500"></i>
+                            {t('core_cust')}
+                        </button>
+                        <button 
+                            onClick={() => setTab('general')}
+                            class={`flex-1 py-3 text-center rounded-xl font-semibold transition-all ${
+                                tab === 'general' 
+                                ? 'bg-white text-irongray-800 shadow-sm border-t border-slate-100' 
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                        >
+                            <i class="fa-solid fa-users mr-2 text-indigo-500"></i>
+                            {t('gen_cust')}
+                        </button>
+                    </div>
+
+                    {/* 版型一：核心客群 */}
+                    {tab === 'core' && (
+                        <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 space-y-8 animate-fadeIn">
+                            
+                            {/* 來店時間 */}
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                                <span class="text-slate-500 font-medium flex items-center gap-2">
+                                    <i class="fa-regular fa-clock text-gold-500"></i>
+                                    {t('time')}：
+                                </span>
+                                <div class="bg-slate-50 border border-slate-100 px-4 py-2.5 rounded-xl font-mono text-slate-800 text-sm md:text-base font-semibold shadow-inner">
+                                    {formatDateTime(currentTime)}
+                                </div>
+                            </div>
+
+                            {/* 姓名按鈕選擇 */}
+                            <div class="space-y-4">
+                                <label class="block text-slate-700 font-bold text-lg">
+                                    {t('name')}：
+                                </label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                    {coreCustomers.map((cust) => (
+                                        <button
+                                            key={cust.id}
+                                            onClick={() => setCoreSelectedCust(cust.id)}
+                                            class={`relative py-4 px-3 rounded-2xl font-bold transition-all border-2 text-center text-base shadow-sm ${
+                                                coreSelectedCust === cust.id
+                                                ? 'bg-mint-500 border-mint-500 text-white scale-105 shadow-md shadow-mint-500/20'
+                                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <span class="block text-lg">{cust.name}</span>
+                                            <span class={`text-[10px] block mt-1 ${coreSelectedCust === cust.id ? 'text-white' : 'text-slate-400'}`}>
+                                                {t('balance')}: ${cust.prepaidBalance}
+                                            </span>
+                                        </button>
+                                    ))}
+
+                                    {/* ＋ 新增按鈕 */}
+                                    <button 
+                                        onClick={() => { setAddModalType('core'); setShowAddModal(true); }}
+                                        class="bg-gold-500 hover:bg-gold-600 text-white py-4 px-3 rounded-2xl font-bold border-2 border-gold-500 shadow-sm hover:scale-105 transition-all text-center flex flex-col justify-center items-center gap-1"
+                                    >
+                                        <i class="fa-solid fa-user-plus text-lg"></i>
+                                        <span class="text-xs">{t('add_new')}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 常規品項選擇(核心客群專用) */}
+                            <div class="space-y-4 pt-4 border-t border-slate-100">
+                                <label class="block text-slate-700 font-bold text-lg">
+                                    {t('item')} & 金額：
+                                </label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {items.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => {
+                                                setCoreItem(item.name);
+                                                setCoreAmount(item.price);
+                                            }}
+                                            class={`py-3 px-4 rounded-xl font-bold border transition-all ${
+                                                coreItem === item.name
+                                                ? 'bg-irongray-800 text-white border-irongray-800'
+                                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            <span class="block">{item.name}</span>
+                                            <span class="block text-xs text-gold-500">${item.price}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 付款方式 */}
+                            <div class="space-y-4 pt-4 border-t border-slate-100">
+                                <label class="block text-slate-700 font-bold text-lg">
+                                    {t('payment')}：
+                                </label>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <button
+                                        onClick={() => setCoreSelectedPayment('現金')}
+                                        class={`py-4 px-6 rounded-2xl font-bold transition-all border-2 text-center text-lg ${
+                                            coreSelectedPayment === '現金'
+                                            ? 'bg-mint-500 border-mint-500 text-white shadow-lg shadow-mint-500/20'
+                                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <i class="fa-solid fa-wallet mr-2"></i> {t('cash')}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setCoreSelectedPayment('Line Pay')}
+                                        class={`py-4 px-6 rounded-2xl font-bold transition-all border-2 text-center text-lg ${
+                                            coreSelectedPayment === 'Line Pay'
+                                            ? 'bg-mint-500 border-mint-500 text-white shadow-lg shadow-mint-500/20'
+                                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <i class="fa-brands fa-line mr-2 text-green-500"></i> {t('linepay')}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setCoreSelectedPayment('儲值扣款')}
+                                        class={`py-4 px-6 rounded-2xl font-bold transition-all border-2 text-center text-lg ${
+                                            coreSelectedPayment === '儲值扣款'
+                                            ? 'bg-mint-500 border-mint-500 text-white shadow-lg shadow-mint-500/20'
+                                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <i class="fa-solid fa-piggy-bank mr-2"></i> {t('prepaid')} 
+                                        {coreSelectedCust && (
+                                            <span class="block text-xs mt-1 text-gold-500 font-semibold">
+                                                ({t('balance')}: ${currentCoreBalance})
+                                            </span>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 確認送出 */}
+                            <div class="pt-6 border-t border-slate-100 flex justify-end">
+                                <button
+                                    onClick={handleCoreSubmit}
+                                    class="w-full sm:w-auto bg-mint-500 hover:bg-mint-600 text-white font-bold px-12 py-4 rounded-2xl shadow-xl shadow-mint-500/20 text-lg transition-transform hover:scale-[1.02] active:scale-95"
+                                >
+                                    <i class="fa-solid fa-check mr-2"></i> {t('submit')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 版型二：一般客群 */}
+                    {tab === 'general' && (
+                        <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 space-y-6 animate-fadeIn">
+                            
+                            {/* 來店時間 */}
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                                <span class="text-slate-500 font-medium flex items-center gap-2">
+                                    <i class="fa-regular fa-clock text-indigo-500"></i>
+                                    {t('time')}：
+                                </span>
+                                <div class="bg-slate-50 border border-slate-100 px-4 py-2.5 rounded-xl font-mono text-slate-800 text-sm md:text-base font-semibold shadow-inner">
+                                    {formatDateTime(currentTime)}
+                                </div>
+                            </div>
+
+                            {/* 代號選取與排序按鈕 */}
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <label class="block text-slate-700 font-bold text-lg">
+                                        {t('code')}：
+                                    </label>
+                                    
+                                    {/* 排序開關 */}
+                                    <button 
+                                        onClick={() => setIsSortingMode(!isSortingMode)}
+                                        class={`px-4 py-2 rounded-xl text-xs font-semibold shadow-sm border transition-all ${
+                                            isSortingMode 
+                                            ? 'bg-gold-500 border-gold-500 text-irongray-900 font-bold' 
+                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                                        }`}
+                                    >
+                                        <i class="fa-solid fa-sort mr-1.5"></i>
+                                        {isSortingMode ? t('save_order') : t('order_sort')}
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                    {genCustomers.map((cust, index) => (
+                                        <div 
+                                            key={cust.id} 
+                                            class={`relative flex flex-col justify-between p-3 rounded-2xl border-2 transition-all ${
+                                                genSelectedCust === cust.id && !isSortingMode
+                                                ? 'bg-mint-500 border-mint-500 text-white shadow-md shadow-mint-500/10'
+                                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            {/* 主要選取動作 */}
+                                            <button
+                                                disabled={isSortingMode}
+                                                onClick={() => setGenSelectedCust(cust.id)}
+                                                class="w-full text-center py-2 font-bold focus:outline-none"
+                                            >
+                                                <span class="block text-sm md:text-base">{cust.name}</span>
+                                                <span class={`text-[10px] block mt-1 ${genSelectedCust === cust.id && !isSortingMode ? 'text-white' : 'text-slate-400'}`}>
+                                                    {t('cup_prepaid')}: {cust.cupsLeft}
+                                                </span>
+                                            </button>
+
+                                            {/* 排序操作輔助 */}
+                                            {isSortingMode && (
+                                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100 gap-1">
+                                                    <button 
+                                                        onClick={() => moveCust(index, -1)}
+                                                        disabled={index === 0}
+                                                        class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg py-1 text-xs disabled:opacity-30 disabled:pointer-events-none"
+                                                    >
+                                                        <i class="fa-solid fa-arrow-left"></i>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => moveCust(index, 1)}
+                                                        disabled={index === genCustomers.length - 1}
+                                                        class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg py-1 text-xs disabled:opacity-30 disabled:pointer-events-none"
+                                                    >
+                                                        <i class="fa-solid fa-arrow-right"></i>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {/* ＋ 新增按鈕 */}
+                                    <button 
+                                        onClick={() => { setAddModalType('gen'); setShowAddModal(true); }}
+                                        class="bg-gold-500 hover:bg-gold-600 text-white py-4 px-3 rounded-2xl font-bold border-2 border-gold-500 shadow-sm hover:scale-105 transition-all text-center flex flex-col justify-center items-center gap-1"
+                                    >
+                                        <i class="fa-solid fa-user-plus text-lg"></i>
+                                        <span class="text-xs">{t('add_new')}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 品項選擇 (預設美式、拿鐵) */}
+                            <div class="space-y-4 pt-4 border-t border-slate-100">
+                                <label class="block text-slate-700 font-bold text-lg">
+                                    {t('item')}：
+                                </label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {items.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => setGenSelectedItem(item.name)}
+                                            class={`py-3.5 px-6 rounded-xl font-bold transition-all border-2 text-center text-base ${
+                                                genSelectedItem === item.name
+                                                ? 'bg-irongray-800 border-irongray-800 text-white shadow-md'
+                                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            {item.name} (${item.price})
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 溫度選擇 */}
+                            <div class="space-y-4 pt-4 border-t border-slate-100">
+                                <label class="block text-slate-700 font-bold text-lg">
+                                    {t('temp')}：
+                                </label>
+                                <div class="grid grid-cols-3 gap-3 max-w-md">
+                                    {['冰', '熱', '溫'].map((temp) => {
+                                        const tempLabels = { '冰': t('ice'), '熱': t('hot'), '溫': t('warm') };
+                                        const icons = { '冰': 'fa-snowflake text-sky-400', '熱': 'fa-fire text-rose-500', '溫': 'fa-temperature-half text-amber-500' };
+                                        return (
+                                            <button
+                                                key={temp}
+                                                onClick={() => setGenSelectedTemp(temp)}
+                                                class={`py-3.5 px-4 rounded-xl font-bold transition-all border-2 text-center flex items-center justify-center gap-2 ${
+                                                    genSelectedTemp === temp
+                                                    ? 'bg-mint-500 border-mint-500 text-white shadow-md shadow-mint-500/10'
+                                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <i class={`fa-solid ${icons[temp]}`}></i>
+                                                {tempLabels[temp] || temp}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* 付款方式選擇 */}
+                            <div class="space-y-4 pt-4 border-t border-slate-100">
+                                <label class="block text-slate-700 font-bold text-lg">
+                                    {t('payment')}：
+                                </label>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <button
+                                        onClick={() => setGenSelectedPayment('現金')}
+                                        class={`py-4 px-6 rounded-2xl font-bold transition-all border-2 text-center text-lg ${
+                                            genSelectedPayment === '現金'
+                                            ? 'bg-mint-500 border-mint-500 text-white shadow-lg shadow-mint-500/20'
+                                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <i class="fa-solid fa-wallet mr-2"></i> {t('cash')}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setGenSelectedPayment('Line Pay')}
+                                        class={`py-4 px-6 rounded-2xl font-bold transition-all border-2 text-center text-lg ${
+                                            genSelectedPayment === 'Line Pay'
+                                            ? 'bg-mint-500 border-mint-500 text-white shadow-lg shadow-mint-500/20'
+                                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <i class="fa-brands fa-line mr-2 text-green-500"></i> {t('linepay')}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setGenSelectedPayment('寄杯')}
+                                        class={`py-4 px-6 rounded-2xl font-bold transition-all border-2 text-center text-lg ${
+                                            genSelectedPayment === '寄杯'
+                                            ? 'bg-mint-500 border-mint-500 text-white shadow-lg shadow-mint-500/20'
+                                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <i class="fa-solid fa-mug-hot mr-2"></i> {t('cup_prepaid')}
+                                        {genSelectedCust && (
+                                            <span class="block text-xs mt-1 text-gold-500 font-semibold">
+                                                ({t('cups_left')}: {currentGenCups})
+                                            </span>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 確認提交 */}
+                            <div class="pt-6 border-t border-slate-100 flex justify-end">
+                                <button
+                                    onClick={handleGenSubmit}
+                                    class="w-full sm:w-auto bg-mint-500 hover:bg-mint-600 text-white font-bold px-12 py-4 rounded-2xl shadow-xl shadow-mint-500/20 text-lg transition-transform hover:scale-[1.02] active:scale-95"
+                                >
+                                    <i class="fa-solid fa-check mr-2"></i> {t('submit')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 新增熟客姓名與代號 Modal 視窗 */}
+                    {showAddModal && (
+                        <div class="fixed inset-0 bg-irongray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+                            <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-6">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-lg font-bold text-slate-800">
+                                        {addModalType === 'core' ? '新增核心客群姓名' : '新增一般客群代號'}
+                                    </h3>
+                                    <button onClick={() => setShowAddModal(false)} class="text-slate-400 hover:text-slate-600">
+                                        <i class="fa-solid fa-xmark text-lg"></i>
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handleAddCustSubmit} class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-600 mb-1.5">{t('name')}/{t('code')}</label>
+                                        <input 
+                                            type="text" 
+                                            required
+                                            value={newCustName}
+                                            onChange={(e) => setNewCustName(e.target.value)}
+                                            placeholder={t('placeholder_name')}
+                                            class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-mint-500 bg-slate-50"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-600 mb-1.5">
+                                            {addModalType === 'core' ? `${t('balance')} ($)` : `${t('cup_prepaid')} (${t('cups_left')})`}
+                                        </label>
+                                        <input 
+                                            type="number" 
+                                            value={newCustBalance}
+                                            onChange={(e) => setNewCustBalance(e.target.value)}
+                                            placeholder={t('placeholder_balance')}
+                                            class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-mint-500 bg-slate-50"
+                                        />
+                                    </div>
+
+                                    <div class="flex gap-3 pt-4">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowAddModal(false)}
+                                            class="flex-1 py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-semibold text-sm transition-all"
+                                        >
+                                            {t('cancel')}
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            class="flex-1 py-3 bg-mint-500 hover:bg-mint-600 text-white rounded-xl font-bold text-sm shadow-md shadow-mint-500/10 transition-all"
+                                        >
+                                            {t('confirm_add')}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 2. 消費查詢版面 (QueryPanel)
+        // ==========================================
+        function QueryPanel({ t, records, setRecords, showToast }) {
+            const [searchWord, setSearchWord] = useState('');
+
+            // 刪除某一筆
+            const deleteRecord = (id) => {
+                const confirmed = window.confirm('確定要刪除此筆消費紀錄嗎？');
+                if (confirmed) {
+                    setRecords(records.filter(r => r.id !== id));
+                    showToast('紀錄已刪除');
+                }
+            };
+
+            const filteredRecords = useMemo(() => {
+                return records.filter(rec => 
+                    rec.customerName.toLowerCase().includes(searchWord.toLowerCase()) ||
+                    rec.item.toLowerCase().includes(searchWord.toLowerCase()) ||
+                    rec.payment.toLowerCase().includes(searchWord.toLowerCase())
+                );
+            }, [records, searchWord]);
+
+            return (
+                <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 space-y-6 animate-fadeIn">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <h2 class="text-xl font-bold text-irongray-800 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-gold-500"></i>
+                            消費即時查詢
+                        </h2>
+
+                        {/* 手動輸入查詢 (全平台無下拉，此處以文字輸入快速過濾) */}
+                        <div class="relative w-full sm:w-72">
+                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-400"></i>
+                            <input 
+                                type="text"
+                                value={searchWord}
+                                onChange={(e) => setSearchWord(e.target.value)}
+                                placeholder="輸入姓名、品項、付款方式查詢..."
+                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:border-mint-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-2xl border border-slate-100">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-irongray-800 text-white text-xs md:text-sm uppercase font-semibold">
+                                    <th class="p-4">{t('time')}</th>
+                                    <th class="p-4">{t('name')}/{t('code')}</th>
+                                    <th class="p-4">{t('item')}</th>
+                                    <th class="p-4">{t('temp')}</th>
+                                    <th class="p-4">{t('payment')}</th>
+                                    <th class="p-4 text-right">金額</th>
+                                    <th class="p-4 text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                {filteredRecords.length > 0 ? (
+                                    filteredRecords.map((rec) => (
+                                        <tr key={rec.id} class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-4 font-mono text-slate-500">{rec.time}</td>
+                                            <td class="p-4 font-bold text-slate-800">
+                                                {rec.customerName}
+                                                <span class={`ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium ${rec.isCore ? 'bg-gold-100 text-gold-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                    {rec.isCore ? '核心' : '一般'}
+                                                </span>
+                                            </td>
+                                            <td class="p-4 text-slate-700 font-medium">{rec.item}</td>
+                                            <td class="p-4">
+                                                <span class={`px-2 py-0.5 rounded-md text-xs font-semibold ${
+                                                    rec.temp === '冰' ? 'bg-sky-50 text-sky-600' :
+                                                    rec.temp === '熱' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
+                                                }`}>
+                                                    {rec.temp}
+                                                </span>
+                                            </td>
+                                            <td class="p-4">
+                                                <span class={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                                    rec.payment === '現金' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                                    rec.payment === 'Line Pay' ? 'bg-green-50 text-green-700 border border-green-100' :
+                                                    'bg-amber-50 text-amber-700 border border-amber-100'
+                                                }`}>
+                                                    {rec.payment}
+                                                </span>
+                                            </td>
+                                            <td class="p-4 text-right font-bold text-slate-900">${rec.amount}</td>
+                                            <td class="p-4 text-center">
+                                                <button 
+                                                    onClick={() => deleteRecord(rec.id)}
+                                                    class="text-rose-400 hover:text-rose-600 p-2 hover:bg-rose-50 rounded-lg transition-colors"
+                                                >
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="7" class="p-8 text-center text-slate-400">
+                                            <i class="fa-solid fa-face-meh block text-3xl mb-2 text-slate-300"></i>
+                                            {t('no_record')}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 3. 銷售品項與基本資料設定面版 (ItemsPanel)
+        // ==========================================
+        function ItemsPanel({ t, items, setItems, coreCustomers, setCoreCustomers, genCustomers, setGenCustomers, showToast }) {
+            const [newItemName, setNewItemName] = useState('');
+            const [newItemPrice, setNewItemPrice] = useState('');
+
+            // 新增品項
+            const handleAddItem = (e) => {
+                e.preventDefault();
+                if (!newItemName.trim() || !newItemPrice) return;
+                
+                const item = {
+                    id: 'item_' + Date.now(),
+                    name: newItemName.trim(),
+                    price: parseInt(newItemPrice) || 0
+                };
+
+                setItems([...items, item]);
+                setNewItemName('');
+                setNewItemPrice('');
+                showToast(t('add_success'));
+            };
+
+            // 刪除品項
+            const handleDeleteItem = (id) => {
+                if(items.length <= 1) {
+                    showToast('請至少保留一個銷售品項！', 'error');
+                    return;
+                }
+                setItems(items.filter(i => i.id !== id));
+                showToast('品項已移除');
+            };
+
+            // 直接按鈕調整客戶金額
+            const adjustCoreBalance = (id, delta) => {
+                setCoreCustomers(prev => prev.map(c => 
+                    c.id === id 
+                    ? { ...c, prepaidBalance: Math.max(0, c.prepaidBalance + delta) } 
+                    : c
+                ));
+                showToast('餘額已更新');
+            };
+
+            const adjustGenCups = (id, delta) => {
+                setGenCustomers(prev => prev.map(c => 
+                    c.id === id 
+                    ? { ...c, cupsLeft: Math.max(0, c.cupsLeft + delta) } 
+                    : c
+                ));
+                showToast('寄杯杯數已更新');
+            };
+
+            return (
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn">
+                    
+                    {/* 左側：商品品項維護 */}
+                    <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 space-y-6">
+                        <h2 class="text-xl font-bold text-irongray-800 flex items-center gap-2 pb-4 border-b border-slate-100">
+                            <i class="fa-solid fa-mug-hot text-gold-500"></i>
+                            銷售品項設定
+                        </h2>
+
+                        {/* 品項新增表單 */}
+                        <form onSubmit={handleAddItem} class="flex flex-col sm:flex-row gap-3">
+                            <input 
+                                type="text"
+                                required
+                                value={newItemName}
+                                onChange={(e) => setNewItemName(e.target.value)}
+                                placeholder="品項名稱 (例：美式、拿鐵)"
+                                class="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-mint-500 bg-slate-50"
+                            />
+                            <input 
+                                type="number"
+                                required
+                                value={newItemPrice}
+                                onChange={(e) => setNewItemPrice(e.target.value)}
+                                placeholder="價格"
+                                class="w-full sm:w-28 px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-mint-500 bg-slate-50"
+                            />
+                            <button 
+                                type="submit"
+                                class="bg-mint-500 hover:bg-mint-600 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all whitespace-nowrap"
+                            >
+                                <i class="fa-solid fa-plus mr-1"></i> {t('add_new')}
+                            </button>
+                        </form>
+
+                        {/* 列表 */}
+                        <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                            {items.map((item) => (
+                                <div key={item.id} class="flex justify-between items-center p-3.5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all">
+                                    <div class="font-bold text-slate-800">{item.name}</div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="font-bold text-gold-600 font-mono">${item.price}</span>
+                                        <button 
+                                            onClick={() => handleDeleteItem(item.id)}
+                                            class="text-rose-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50"
+                                        >
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 右側：客戶加值、寄杯管理 */}
+                    <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 space-y-6">
+                        <h2 class="text-xl font-bold text-irongray-800 flex items-center gap-2 pb-4 border-b border-slate-100">
+                            <i class="fa-solid fa-address-book text-indigo-500"></i>
+                            快速儲值 & 寄杯管理 (免下拉選單)
+                        </h2>
+
+                        <div class="space-y-6 max-h-[460px] overflow-y-auto pr-1">
+                            {/* 核心客群儲值快速增減 */}
+                            <div class="space-y-3">
+                                <h3 class="text-sm font-bold text-slate-500 tracking-wider uppercase">核心客群 餘額直加減</h3>
+                                <div class="grid grid-cols-1 gap-2">
+                                    {coreCustomers.map(cust => (
+                                        <div key={cust.id} class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 rounded-xl gap-2">
+                                            <div>
+                                                <span class="font-bold text-slate-800">{cust.name}</span>
+                                                <span class="text-xs text-slate-400 ml-2">(餘額: ${cust.prepaidBalance})</span>
+                                            </div>
+                                            <div class="flex gap-1 w-full sm:w-auto">
+                                                <button onClick={() => adjustCoreBalance(cust.id, 100)} class="flex-1 sm:flex-none px-2.5 py-1 bg-mint-500 text-white rounded-lg text-xs font-bold hover:bg-mint-600">+100</button>
+                                                <button onClick={() => adjustCoreBalance(cust.id, 500)} class="flex-1 sm:flex-none px-2.5 py-1 bg-mint-500 text-white rounded-lg text-xs font-bold hover:bg-mint-600">+500</button>
+                                                <button onClick={() => adjustCoreBalance(cust.id, 1000)} class="flex-1 sm:flex-none px-2.5 py-1 bg-mint-500 text-white rounded-lg text-xs font-bold hover:bg-mint-600">+1000</button>
+                                                <button onClick={() => adjustCoreBalance(cust.id, -100)} class="flex-1 sm:flex-none px-2.5 py-1 bg-rose-500 text-white rounded-lg text-xs font-bold hover:bg-rose-600">-100</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 一般客群寄杯快速增減 */}
+                            <div class="space-y-3">
+                                <h3 class="text-sm font-bold text-slate-500 tracking-wider uppercase">一般客群 寄杯直加減</h3>
+                                <div class="grid grid-cols-1 gap-2">
+                                    {genCustomers.slice(0, 8).map(cust => (
+                                        <div key={cust.id} class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 rounded-xl gap-2">
+                                            <div>
+                                                <span class="font-bold text-slate-800">{cust.name}</span>
+                                                <span class="text-xs text-slate-400 ml-2">(寄杯: {cust.cupsLeft}杯)</span>
+                                            </div>
+                                            <div class="flex gap-1 w-full sm:w-auto">
+                                                <button onClick={() => adjustGenCups(cust.id, 1)} class="flex-1 sm:flex-none px-3 py-1 bg-mint-500 text-white rounded-lg text-xs font-bold hover:bg-mint-600">+1 杯</button>
+                                                <button onClick={() => adjustGenCups(cust.id, 5)} class="flex-1 sm:flex-none px-3 py-1 bg-mint-500 text-white rounded-lg text-xs font-bold hover:bg-mint-600">+5 杯</button>
+                                                <button onClick={() => adjustGenCups(cust.id, -1)} class="flex-1 sm:flex-none px-3 py-1 bg-rose-500 text-white rounded-lg text-xs font-bold hover:bg-rose-600">-1 杯</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 4. 管理後台版面 (AdminPanel)
+        // ==========================================
+        function AdminPanel({ t, lang, records, setRecords, expenses, setExpenses, coreCustomers, genCustomers, showToast }) {
+            const [adminTab, setAdminTab] = useState('finance'); // finance, analysis, billing, accounting
+            
+            // 4-1. 財報狀態
+            const [financeRange, setFinanceRange] = useState('today'); // today, week, month, custom
+            const [customStartDate, setCustomStartDate] = useState('');
+            const [customEndDate, setCustomEndDate] = useState('');
+
+            // 4-2. 分析狀態 (顧客消費歷史)
+            const [selectedCustName, setSelectedCustName] = useState('');
+
+            // 4-4. 記帳狀態
+            const [expDate, setExpDate] = useState(new Date().toISOString().substring(0, 10));
+            const [expCategory, setExpCategory] = useState('採購登錄');
+            const [expAmount, setExpAmount] = useState('');
+            const [expMemo, setExpMemo] = useState('');
+
+            // 所有不重合的客群名稱列表
+            const allCustomerNames = useMemo(() => {
+                const cores = coreCustomers.map(c => c.name);
+                const gens = genCustomers.map(c => c.name);
+                return [...new Set([...cores, ...gens])];
+            }, [coreCustomers, genCustomers]);
+
+            // 自動設定初始分析顧客
+            useEffect(() => {
+                if (allCustomerNames.length > 0 && !selectedCustName) {
+                    setSelectedCustName(allCustomerNames[0]);
+                }
+            }, [allCustomerNames, selectedCustName]);
+
+            // 過濾財報紀錄
+            const filteredFinanceRecords = useMemo(() => {
+                const now = new Date();
+                const todayStr = now.toDateString();
+                
+                return records.filter(r => {
+                    const rDate = new Date(r.timestamp);
+                    if (financeRange === 'today') {
+                        return rDate.toDateString() === todayStr;
+                    } else if (financeRange === 'week') {
+                        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        return rDate >= oneWeekAgo;
+                    } else if (financeRange === 'month') {
+                        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        return rDate >= oneMonthAgo;
+                    } else if (financeRange === 'custom') {
+                        if (!customStartDate || !customEndDate) return true;
+                        const start = new Date(customStartDate + 'T00:00:00');
+                        const end = new Date(customEndDate + 'T23:59:59');
+                        return rDate >= start && rDate <= end;
+                    }
+                    return true;
+                });
+            }, [records, financeRange, customStartDate, customEndDate]);
+
+            // 過濾支出紀錄
+            const filteredExpenses = useMemo(() => {
+                const now = new Date();
+                const todayStr = now.toDateString();
+                
+                return expenses.filter(e => {
+                    const eDate = new Date(e.date);
+                    if (financeRange === 'today') {
+                        return eDate.toDateString() === todayStr;
+                    } else if (financeRange === 'week') {
+                        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        return eDate >= oneWeekAgo;
+                    } else if (financeRange === 'month') {
+                        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        return eDate >= oneMonthAgo;
+                    } else if (financeRange === 'custom') {
+                        if (!customStartDate || !customEndDate) return true;
+                        const start = new Date(customStartDate);
+                        const end = new Date(customEndDate);
+                        return eDate >= start && eDate <= end;
+                    }
+                    return true;
+                });
+            }, [expenses, financeRange, customStartDate, customEndDate]);
+
+            // 統計數據
+            const stats = useMemo(() => {
+                let totalRevenue = 0;
+                let cash = 0;
+                let linePay = 0;
+                let prepaid = 0;
+
+                filteredFinanceRecords.forEach(r => {
+                    totalRevenue += r.amount;
+                    if (r.payment === '現金') cash += r.amount;
+                    else if (r.payment === 'Line Pay') linePay += r.amount;
+                    else if (r.payment === '儲值扣款') prepaid += r.amount; 
+                });
+
+                const totalExp = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+                return {
+                    totalRevenue,
+                    totalExp,
+                    netProfit: totalRevenue - totalExp,
+                    cash,
+                    linePay,
+                    prepaid
+                };
+            }, [filteredFinanceRecords, filteredExpenses]);
+
+            // 某一顧客消費歷史 (新到舊排序)
+            const customerHistory = useMemo(() => {
+                if (!selectedCustName) return [];
+                return records
+                    .filter(r => r.customerName === selectedCustName)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            }, [records, selectedCustName]);
+
+            // Line Pay 請款明細
+            const linePayRecords = useMemo(() => {
+                return records.filter(r => r.payment === 'Line Pay');
+            }, [records]);
+
+            // 輸入 Line Pay 款項撥款日期
+            const updatePayoutDate = (id, dateValue) => {
+                setRecords(prev => prev.map(r => 
+                    r.id === id 
+                    ? { ...r, payoutDate: dateValue } 
+                    : r
+                ));
+                showToast('請款撥款日期已更新');
+            };
+
+            // 儲存支出記帳
+            const handleAddExpense = (e) => {
+                e.preventDefault();
+                if (!expAmount) return;
+
+                const newExp = {
+                    id: 'exp_' + Date.now(),
+                    date: expDate,
+                    category: expCategory,
+                    amount: parseInt(expAmount) || 0,
+                    memo: expMemo.trim()
+                };
+
+                setExpenses([newExp, ...expenses]);
+                setExpAmount('');
+                setExpMemo('');
+                showToast('開銷帳目登錄成功！');
+            };
+
+            return (
+                <div class="space-y-6">
+                    {/* 後台四大子板塊切換按鈕 */}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                        <button 
+                            onClick={() => setAdminTab('finance')}
+                            class={`py-3 px-4 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
+                                adminTab === 'finance' 
+                                ? 'bg-mint-500 border-mint-500 text-white shadow-lg' 
+                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                            <i class="fa-solid fa-chart-pie"></i>
+                            {t('admin_finance')}
+                        </button>
+                        <button 
+                            onClick={() => setAdminTab('analysis')}
+                            class={`py-3 px-4 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
+                                adminTab === 'analysis' 
+                                ? 'bg-mint-500 border-mint-500 text-white shadow-lg' 
+                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                            <i class="fa-solid fa-user-gear"></i>
+                            {t('admin_analysis')}
+                        </button>
+                        <button 
+                            onClick={() => setAdminTab('billing')}
+                            class={`py-3 px-4 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
+                                adminTab === 'billing' 
+                                ? 'bg-mint-500 border-mint-500 text-white shadow-lg' 
+                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                            <i class="fa-brands fa-line text-green-500"></i>
+                            {t('admin_billing')}
+                        </button>
+                        <button 
+                            onClick={() => setAdminTab('accounting')}
+                            class={`py-3 px-4 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
+                                adminTab === 'accounting' 
+                                ? 'bg-mint-500 border-mint-500 text-white shadow-lg' 
+                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                            <i class="fa-solid fa-book-open"></i>
+                            {t('admin_accounting')}
+                        </button>
+                    </div>
+
+                    {/* 子板塊一：財報收支分析 */}
+                    {adminTab === 'finance' && (
+                        <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 space-y-6 animate-fadeIn">
+                            {/* 自訂區間按鈕群 (無下拉) */}
+                            <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800">區間分析統計</h3>
+                                <div class="flex flex-wrap gap-2">
+                                    {['today', 'week', 'month', 'custom'].map((range) => {
+                                        const rangeLabels = { 'today': t('today'), 'week': t('week'), 'month': t('month'), 'custom': t('custom_range') };
+                                        return (
+                                            <button
+                                                key={range}
+                                                onClick={() => setFinanceRange(range)}
+                                                class={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                                    financeRange === range 
+                                                    ? 'bg-irongray-800 text-white shadow-md' 
+                                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                                                }`}
+                                            >
+                                                {rangeLabels[range] || range}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* 自訂日期區間欄位 */}
+                            {financeRange === 'custom' && (
+                                <div class="bg-slate-50 p-4 rounded-2xl flex flex-wrap items-center gap-4 border border-slate-100">
+                                    <div class="flex items-center gap-2 relative">
+                                        <span class="text-xs font-semibold text-slate-500">{t('start_date')}:</span>
+                                        <input 
+                                            type="date"
+                                            value={customStartDate}
+                                            onChange={(e) => setCustomStartDate(e.target.value)}
+                                            class="px-3 py-2 border rounded-xl text-sm bg-white font-mono focus:outline-none focus:border-mint-500 relative"
+                                        />
+                                    </div>
+                                    <div class="flex items-center gap-2 relative">
+                                        <span class="text-xs font-semibold text-slate-500">{t('end_date')}:</span>
+                                        <input 
+                                            type="date"
+                                            value={customEndDate}
+                                            onChange={(e) => setCustomEndDate(e.target.value)}
+                                            class="px-3 py-2 border rounded-xl text-sm bg-white font-mono focus:outline-none focus:border-mint-500 relative"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 總收支分析卡片 */}
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 rounded-2xl shadow-md space-y-2">
+                                    <span class="text-xs uppercase tracking-wider text-teal-100">{t('total_rev')}</span>
+                                    <div class="text-3xl font-extrabold font-mono">${stats.totalRevenue}</div>
+                                </div>
+                                <div class="bg-gradient-to-br from-rose-500 to-orange-500 text-white p-6 rounded-2xl shadow-md space-y-2">
+                                    <span class="text-xs uppercase tracking-wider text-rose-100">{t('total_exp')}</span>
+                                    <div class="text-3xl font-extrabold font-mono">${stats.totalExp}</div>
+                                </div>
+                                <div class="bg-gradient-to-br from-irongray-800 to-irongray-900 text-white p-6 rounded-2xl shadow-md space-y-2 border-b-4 border-gold-500">
+                                    <span class="text-xs uppercase tracking-wider text-slate-300">{t('net_profit')}</span>
+                                    <div class="text-3xl font-extrabold font-mono text-gold-400">${stats.netProfit}</div>
+                                </div>
+                            </div>
+
+                            {/* 付款渠道比率分析 - 視覺化能量條 */}
+                            <div class="space-y-4 pt-4">
+                                <h4 class="text-sm font-bold text-slate-700 tracking-wider uppercase">{t('revenue_by_pay')}</h4>
+                                <div class="space-y-3">
+                                    {/* 現金 */}
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between text-xs font-bold text-slate-600">
+                                            <span>{t('cash')}</span>
+                                            <span class="font-mono">${stats.cash}</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                            <div 
+                                                class="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                                                style={{ width: `${stats.totalRevenue > 0 ? (stats.cash / stats.totalRevenue) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                    {/* Line Pay */}
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between text-xs font-bold text-slate-600">
+                                            <span>{t('linepay')}</span>
+                                            <span class="font-mono">${stats.linePay}</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                            <div 
+                                                class="bg-green-500 h-full rounded-full transition-all duration-500"
+                                                style={{ width: `${stats.totalRevenue > 0 ? (stats.linePay / stats.totalRevenue) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                    {/* 儲值扣款 */}
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between text-xs font-bold text-slate-600">
+                                            <span>{t('prepaid')}</span>
+                                            <span class="font-mono">${stats.prepaid}</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                            <div 
+                                                class="bg-amber-500 h-full rounded-full transition-all duration-500"
+                                                style={{ width: `${stats.totalRevenue > 0 ? (stats.prepaid / stats.totalRevenue) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 子板塊二：客群分析 (同一位客群消費記錄，由新至舊排列) */}
+                    {adminTab === 'analysis' && (
+                        <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 space-y-6 animate-fadeIn">
+                            <h3 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">熟客常客消費歷史分析 (倒敘排序)</h3>
+                            
+                            {/* 顧客大按鈕選擇 (完全無下拉選單) */}
+                            <div class="space-y-2">
+                                <span class="block text-xs font-bold text-slate-500 tracking-wider uppercase">點選顧客開始分析：</span>
+                                <div class="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto p-1 border rounded-xl bg-slate-50">
+                                    {allCustomerNames.map(name => (
+                                        <button
+                                            key={name}
+                                            onClick={() => setSelectedCustName(name)}
+                                            class={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                                selectedCustName === name 
+                                                ? 'bg-gold-500 text-irongray-900 shadow-md font-extrabold' 
+                                                : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                                            }`}
+                                        >
+                                            {name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 該顧客消費軌跡 (新至舊) */}
+                            <div class="space-y-3">
+                                <h4 class="text-sm font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                                    <i class="fa-solid fa-clock-rotate-left text-gold-500"></i>
+                                    {selectedCustName} 的消費時間軸紀錄
+                                </h4>
+
+                                <div class="overflow-x-auto rounded-xl border border-slate-100">
+                                    <table class="w-full text-left border-collapse text-sm">
+                                        <thead>
+                                            <tr class="bg-irongray-800 text-white text-xs">
+                                                <th class="p-3">{t('time')}</th>
+                                                <th class="p-3">{t('item')}</th>
+                                                <th class="p-3">{t('temp')}</th>
+                                                <th class="p-3">{t('payment')}</th>
+                                                <th class="p-3 text-right">交易金額</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            {customerHistory.length > 0 ? (
+                                                customerHistory.map(rec => (
+                                                    <tr key={rec.id} class="hover:bg-slate-50">
+                                                        <td class="p-3 font-mono text-slate-500 text-xs">{rec.time}</td>
+                                                        <td class="p-3 font-semibold text-slate-800">{rec.item}</td>
+                                                        <td class="p-3">{rec.temp}</td>
+                                                        <td class="p-3 text-xs">{rec.payment}</td>
+                                                        <td class="p-3 text-right font-bold text-slate-900 font-mono">${rec.amount}</td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="5" class="p-6 text-center text-slate-400">
+                                                        該顧客目前無消費紀錄
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 子板塊三：Line Pay 請款核對單 */}
+                    {adminTab === 'billing' && (
+                        <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 space-y-6 animate-fadeIn">
+                            <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <i class="fa-brands fa-line text-green-500 text-xl"></i>
+                                    Line Pay 對帳清算清單
+                                </h3>
+                                <span class="bg-green-50 text-green-700 text-xs px-3 py-1.5 rounded-full font-bold">
+                                    核對管道
+                                </span>
+                            </div>
+
+                            <div class="overflow-x-auto rounded-2xl border border-slate-100">
+                                <table class="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr class="bg-irongray-800 text-white text-xs">
+                                            <th class="p-4">來店時間</th>
+                                            <th class="p-4">顧客姓名/代號</th>
+                                            <th class="p-4">消費品項</th>
+                                            <th class="p-4 text-right">款項金額</th>
+                                            <th class="p-4 text-center">{t('payout_date')}</th>
+                                            <th class="p-4 text-center">{t('payout_status')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        {linePayRecords.length > 0 ? (
+                                            linePayRecords.map(rec => (
+                                                <tr key={rec.id} class="hover:bg-slate-50">
+                                                    <td class="p-4 font-mono text-xs text-slate-500">{rec.time}</td>
+                                                    <td class="p-4 font-bold text-slate-800">{rec.customerName}</td>
+                                                    <td class="p-4 text-slate-600">{rec.item}</td>
+                                                    <td class="p-4 text-right font-bold text-slate-900 font-mono">${rec.amount}</td>
+                                                    <td class="p-4 text-center relative">
+                                                        {/* 日期輸入取代下拉，方便快速登記 */}
+                                                        <div class="inline-flex items-center gap-1.5 bg-slate-50 border px-2 py-1 rounded-lg">
+                                                            <input 
+                                                                type="date"
+                                                                value={rec.payoutDate || ''}
+                                                                onChange={(e) => updatePayoutDate(rec.id, e.target.value)}
+                                                                class="bg-transparent border-none text-xs focus:outline-none w-28 font-mono text-slate-700"
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td class="p-4 text-center">
+                                                        {rec.payoutDate ? (
+                                                            <span class="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md text-xs font-bold">
+                                                                <i class="fa-solid fa-circle-check"></i> 已撥款
+                                                            </span>
+                                                        ) : (
+                                                            <span class="inline-flex items-center gap-1 text-rose-500 bg-rose-50 px-2 py-1 rounded-md text-xs font-bold">
+                                                                <i class="fa-solid fa-hourglass-start"></i> 待入帳
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="6" class="p-8 text-center text-slate-400">
+                                                    目前尚無 Line Pay 消費紀錄
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 子板塊四：日常記帳 (主要支出採購開銷登錄) */}
+                    {adminTab === 'accounting' && (
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+                            
+                            {/* 支出輸入表單 */}
+                            <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 space-y-5 lg:col-span-1">
+                                <h3 class="text-lg font-bold text-slate-800 pb-3 border-b border-slate-100 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-wallet text-gold-500"></i>
+                                    登錄店務支出
+                                </h3>
+
+                                <form onSubmit={handleAddExpense} class="space-y-4">
+                                    {/* 支出日期 */}
+                                    <div class="space-y-1.5 relative">
+                                        <label class="block text-xs font-bold text-slate-500 uppercase">交易日期</label>
+                                        <input 
+                                            type="date"
+                                            required
+                                            value={expDate}
+                                            onChange={(e) => setExpDate(e.target.value)}
+                                            class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-mint-500 bg-slate-50 font-mono"
+                                        />
+                                    </div>
+
+                                    {/* 費用類別（全按鈕、無下拉選單） */}
+                                    <div class="space-y-2">
+                                        <label class="block text-xs font-bold text-slate-500 uppercase">{t('exp_category')}</label>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            {['採購登錄', '水電費', '租金', '其他費用'].map((cat) => {
+                                                const catLabels = { '採購登錄': t('purchase'), '水電費': t('utilities'), '租金': t('rent'), '其他費用': t('others') };
+                                                return (
+                                                    <button
+                                                        key={cat}
+                                                        type="button"
+                                                        onClick={() => setExpCategory(cat)}
+                                                        class={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                                                            expCategory === cat 
+                                                            ? 'bg-mint-500 border-mint-500 text-white shadow-sm' 
+                                                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                                                        }`}
+                                                    >
+                                                        {catLabels[cat] || cat}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 費用金額 */}
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold text-slate-500 uppercase">{t('exp_amount')} ($)</label>
+                                        <input 
+                                            type="number"
+                                            required
+                                            value={expAmount}
+                                            onChange={(e) => setExpAmount(e.target.value)}
+                                            placeholder="請輸入台幣金額"
+                                            class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-mint-500 bg-slate-50 font-mono"
+                                        />
+                                    </div>
+
+                                    {/* 備註說明 */}
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold text-slate-500 uppercase">{t('exp_memo')}</label>
+                                        <input 
+                                            type="text"
+                                            value={expMemo}
+                                            onChange={(e) => setExpMemo(e.target.value)}
+                                            placeholder="採購明細或費用說明"
+                                            class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-mint-500 bg-slate-50"
+                                        />
+                                    </div>
+
+                                    <button 
+                                        type="submit"
+                                        class="w-full bg-irongray-800 hover:bg-irongray-900 text-white font-bold py-3.5 rounded-xl transition-all shadow-md mt-2"
+                                    >
+                                        確定登錄記帳
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* 支出歷史帳本清單 */}
+                            <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 lg:col-span-2 space-y-4">
+                                <h3 class="text-lg font-bold text-slate-800 pb-3 border-b border-slate-100">
+                                    日常支出帳本紀錄 (最新～最舊)
+                                </h3>
+
+                                <div class="overflow-x-auto rounded-xl border border-slate-100 max-h-[400px] overflow-y-auto">
+                                    <table class="w-full text-left border-collapse text-sm">
+                                        <thead>
+                                            <tr class="bg-slate-100 text-slate-700 text-xs">
+                                                <th class="p-3">日期</th>
+                                                <th class="p-3">項目</th>
+                                                <th class="p-3">備註</th>
+                                                <th class="p-3 text-right">支出金額</th>
+                                                <th class="p-3 text-center">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            {expenses.length > 0 ? (
+                                                expenses.map(exp => (
+                                                    <tr key={exp.id} class="hover:bg-slate-50 text-xs md:text-sm">
+                                                        <td class="p-3 font-mono text-slate-500">{exp.date}</td>
+                                                        <td class="p-3 font-bold text-slate-800">{exp.category}</td>
+                                                        <td class="p-3 text-slate-500">{exp.memo || '無'}</td>
+                                                        <td class="p-3 text-right font-bold text-rose-600 font-mono">${exp.amount}</td>
+                                                        <td class="p-3 text-center">
+                                                            <button 
+                                                                onClick={() => setExpenses(expenses.filter(e => e.id !== exp.id))}
+                                                                class="text-slate-400 hover:text-rose-500 p-1 rounded-lg"
+                                                            >
+                                                                <i class="fa-solid fa-trash-can"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="5" class="p-6 text-center text-slate-400">
+                                                        目前尚無開支登錄紀錄
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 渲染啟動
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
